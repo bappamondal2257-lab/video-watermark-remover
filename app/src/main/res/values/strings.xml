@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ClearMark</string>
+    <string name="import_video">Import Video</string>
+    <string name="change_video">Change</string>
+    <string name="manual_box">Box</string>
+    <string name="manual_brush">Brush</string>
+    <string name="remove_watermark">Remove Watermark</string>
+    <string name="save_to_gallery">Save to Gallery</string>
+    <string name="back_to_editor">Back to Edit</string>
+</resources>

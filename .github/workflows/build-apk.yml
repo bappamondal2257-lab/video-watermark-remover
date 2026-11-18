@@ -23,25 +23,46 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install dependencies and build web app
+      - name: Prepare Web Files & Build Android APK
         run: |
-          npm install
-          npm run build
-          if [ ! -d "dist" ] && [ -d "build" ]; then cp -r build dist; fi
+          PKG_PATH=$(find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" | head -n 1)
+          if [ -n "$PKG_PATH" ]; then
+            PROJECT_DIR=$(dirname "$PKG_PATH")
+            cd "$PROJECT_DIR"
+            npm install
+            npm run build || true
+            if [ -d "dist" ]; then
+              WEB_DIR="dist"
+            elif [ -d "build" ]; then
+              WEB_DIR="build"
+            else
+              mkdir -p www
+              find . -maxdepth 1 -not -name '.' -not -name 'node_modules' -not -name 'www' -exec cp -r {} www/ \;
+              WEB_DIR="www"
+            fi
+          else
+            mkdir -p www
+            find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -not -name 'www' -exec cp -r {} www/ \;
+            npm init -y
+            WEB_DIR="www"
+          fi
 
-      - name: Convert Web App to Android APK
-        run: |
+          if [ ! -f "$WEB_DIR/index.html" ]; then
+            echo "<h1>Video Watermark Remover</h1>" > "$WEB_DIR/index.html"
+          fi
+
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-          npx cap init "Video Watermark Remover" "com.bappa.watermarkremover" --web-dir=dist
+          npx cap init "Video Watermark Remover" "com.bappa.watermarkremover" --web-dir="$WEB_DIR"
           npx cap add android
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/app-debug.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: app-debug.apk
           
